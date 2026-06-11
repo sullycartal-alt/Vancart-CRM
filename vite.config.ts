@@ -8,6 +8,12 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Le nouveau service worker s'active immédiatement et prend le contrôle
+      // de tous les onglets ouverts, sans attendre leur fermeture
+      workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
+      },
       includeAssets: ['icons/*'],
       manifest: {
         name: 'VanCart CRM',

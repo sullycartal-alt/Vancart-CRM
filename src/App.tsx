@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Commerce } from './types'
 import { useCommerces } from './hooks/useCommerces'
 import { BottomNav, type Ecran } from './components/ui/BottomNav'
@@ -15,6 +15,15 @@ export default function App() {
   const [ecran, setEcran] = useState<Ecran>('accueil')
   const [commerceOuvert, setCommerceOuvert] = useState<Commerce | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+
+  // Recharge la page dès qu'un nouveau service worker prend le contrôle :
+  // l'utilisateur voit toujours la dernière version déployée
+  useEffect(() => {
+    const recharger = () => window.location.reload()
+    navigator.serviceWorker?.addEventListener('controllerchange', recharger)
+    return () =>
+      navigator.serviceWorker?.removeEventListener('controllerchange', recharger)
+  }, [])
 
   // Le drawer affiche toujours la version à jour du commerce sélectionné
   const commerceActuel = commerceOuvert
