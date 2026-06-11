@@ -7,7 +7,7 @@ import { CommerceDrawer } from './components/CommerceDrawer'
 import { Accueil } from './screens/Accueil'
 import { Ajouter } from './screens/Ajouter'
 import { Pipeline } from './screens/Pipeline'
-import { Stats } from './screens/Stats'
+import { Carte } from './screens/Carte'
 
 /** Composant racine : navigation entre les 4 écrans, drawer et toasts globaux */
 export default function App() {
@@ -51,7 +51,9 @@ export default function App() {
         {ecran === 'pipeline' && (
           <Pipeline commerces={commerces} onOuvrirCommerce={setCommerceOuvert} />
         )}
-        {ecran === 'stats' && <Stats commerces={commerces} />}
+        {ecran === 'carte' && (
+          <Carte commerces={commerces} onOuvrirCommerce={setCommerceOuvert} />
+        )}
       </main>
 
       {/* Drawer de détail d'un commerce */}

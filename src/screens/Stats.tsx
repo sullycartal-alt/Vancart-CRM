@@ -10,7 +10,7 @@ import {
 } from 'recharts'
 import type { Commerce, Prospecteur } from '../types'
 import { COULEURS_STATUT, STATUTS } from '../constants'
-import { getStatutLabel, isAujourdhui } from '../utils'
+import { getArrondissement, getStatutLabel, isAujourdhui } from '../utils'
 
 interface StatsProps {
   commerces: Commerce[]
@@ -62,10 +62,15 @@ export function Stats({ commerces }: StatsProps) {
     nombre: filtres.filter((c) => c.statut === statut).length,
   })).filter((d) => d.nombre > 0)
 
-  // Top quartiers, classés par nombre de commerces
-  const topQuartiers = useMemo(() => {
+  // Commerces par arrondissement (extrait depuis l'adresse), classés par nombre
+  const parArrondissement = useMemo(() => {
     const compteur = new Map<string, number>()
-    filtres.forEach((c) => compteur.set(c.quartier, (compteur.get(c.quartier) ?? 0) + 1))
+    filtres.forEach((c) => {
+      const arrondissement = getArrondissement(c.adresse)
+      if (arrondissement) {
+        compteur.set(arrondissement, (compteur.get(arrondissement) ?? 0) + 1)
+      }
+    })
     return [...compteur.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5)
   }, [filtres])
 
@@ -160,20 +165,20 @@ export function Stats({ commerces }: StatsProps) {
         )}
       </section>
 
-      {/* Top quartiers */}
+      {/* Commerces par arrondissement */}
       <section className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
         <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-white">
-          Top quartiers
+          Commerces par arrondissement
         </h2>
-        {topQuartiers.length === 0 ? (
+        {parArrondissement.length === 0 ? (
           <p className="text-sm text-gray-500 dark:text-gray-400">Aucune donnée.</p>
         ) : (
           <ol className="space-y-2">
-            {topQuartiers.map(([quartier, nombre], index) => (
-              <li key={quartier} className="flex items-center justify-between text-sm">
+            {parArrondissement.map(([arrondissement, nombre], index) => (
+              <li key={arrondissement} className="flex items-center justify-between text-sm">
                 <span className="text-gray-700 dark:text-gray-200">
                   <span className="mr-2 font-bold text-primary">{index + 1}.</span>
-                  {quartier}
+                  {arrondissement} arrondissement
                 </span>
                 <span className="font-semibold text-gray-900 dark:text-white">
                   {nombre}

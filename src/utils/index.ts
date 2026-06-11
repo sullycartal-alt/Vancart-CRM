@@ -67,6 +67,27 @@ export function getStatutLabel(statut: Statut): string {
   return labels[statut]
 }
 
+/**
+ * Extrait l'arrondissement parisien depuis une adresse saisie librement.
+ * Reconnaît un code postal 750XX (ex : "75018" → "18e") ou une mention
+ * explicite comme "11e" / "11ème". Renvoie null si rien n'est détecté.
+ */
+export function getArrondissement(adresse: string): string | null {
+  // Code postal parisien : 75001 → 75020
+  const codePostal = adresse.match(/750(\d{2})/)
+  if (codePostal) {
+    const numero = parseInt(codePostal[1], 10)
+    if (numero >= 1 && numero <= 20) return numero === 1 ? '1er' : `${numero}e`
+  }
+  // Mention directe de l'arrondissement : "11e", "11ème", "11eme"
+  const mention = adresse.match(/\b(\d{1,2})\s*(?:e|er|ème|eme)\b/i)
+  if (mention) {
+    const numero = parseInt(mention[1], 10)
+    if (numero >= 1 && numero <= 20) return numero === 1 ? '1er' : `${numero}e`
+  }
+  return null
+}
+
 /** Formate la date du jour en français, ex : "mercredi 11 juin" */
 export function formatDateJour(): string {
   return new Date().toLocaleDateString('fr-FR', {

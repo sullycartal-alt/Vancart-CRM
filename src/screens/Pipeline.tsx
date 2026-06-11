@@ -27,11 +27,11 @@ export function Pipeline({ commerces, onOuvrirCommerce }: PipelineProps) {
   // Le groupe "pas intéressé" est replié par défaut
   const [montrerPasInteresses, setMontrerPasInteresses] = useState(false)
 
-  // Filtre par nom ou quartier + filtre prospecteur
+  // Filtre par nom ou adresse + filtre prospecteur
   const filtres = commerces.filter((c) => {
     const texte = recherche.toLowerCase()
     const matchTexte =
-      c.nom.toLowerCase().includes(texte) || c.quartier.toLowerCase().includes(texte)
+      c.nom.toLowerCase().includes(texte) || c.adresse.toLowerCase().includes(texte)
     const matchProspecteur = filtre === 'Tous' || c.prospecteur === filtre
     return matchTexte && matchProspecteur
   })
@@ -50,7 +50,7 @@ export function Pipeline({ commerces, onOuvrirCommerce }: PipelineProps) {
         type="search"
         value={recherche}
         onChange={(e) => setRecherche(e.target.value)}
-        placeholder="Rechercher un nom ou un quartier…"
+        placeholder="Rechercher un nom ou une adresse…"
         className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-base dark:border-gray-600 dark:bg-gray-800 dark:text-white"
       />
 
@@ -117,7 +117,7 @@ export function Pipeline({ commerces, onOuvrirCommerce }: PipelineProps) {
                       </span>
                     </div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {c.quartier}
+                      {c.adresse || 'Adresse non renseignée'}
                       {c.gerant && ` · ${c.gerant}`}
                     </p>
                     <div className="mt-1 flex items-center gap-2 text-xs text-gray-400">

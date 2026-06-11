@@ -20,8 +20,7 @@ export interface Commerce {
   id: string
   nom: string
   type: TypeCommerce
-  quartier: string
-  adresse?: string
+  adresse: string
   gerant?: string
   telephone?: string
   statut: Statut

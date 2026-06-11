@@ -1,22 +1,5 @@
 import type { Statut, TypeCommerce } from '../types'
 
-// Liste des quartiers parisiens couverts par la prospection
-export const QUARTIERS = [
-  'Marais',
-  'Batignolles',
-  'Montmartre',
-  'Oberkampf',
-  'République',
-  'Nation',
-  'Bastille',
-  'Saint-Germain',
-  'Pigalle',
-  'Belleville',
-  'Châtelet',
-  'Opéra',
-  'Autre',
-] as const
-
 // Couleur associée à chaque statut du pipeline
 export const COULEURS_STATUT: Record<Statut, string> = {
   à_visiter: '#7C3AED',

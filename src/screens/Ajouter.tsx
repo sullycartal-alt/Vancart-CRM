@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Commerce, Prospecteur, Statut, TypeCommerce } from '../types'
-import { COULEURS_STATUT, ICONES_TYPE, QUARTIERS, STATUTS } from '../constants'
+import { COULEURS_STATUT, ICONES_TYPE, STATUTS } from '../constants'
 import { getStatutLabel } from '../utils'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 
@@ -27,7 +27,7 @@ export function Ajouter({ onAjouter }: AjouterProps) {
   )
   const [nom, setNom] = useState('')
   const [type, setType] = useState<TypeCommerce>('café')
-  const [quartier, setQuartier] = useState<string>(QUARTIERS[0])
+  const [adresse, setAdresse] = useState('')
   const [statut, setStatut] = useState<Statut>('à_visiter')
   const [gerant, setGerant] = useState('')
   const [notes, setNotes] = useState('')
@@ -43,7 +43,7 @@ export function Ajouter({ onAjouter }: AjouterProps) {
     onAjouter({
       nom: nom.trim(),
       type,
-      quartier,
+      adresse: adresse.trim(),
       statut,
       gerant: gerant.trim() || undefined,
       notes: notes.trim() || undefined,
@@ -97,23 +97,19 @@ export function Ajouter({ onAjouter }: AjouterProps) {
         </div>
       </div>
 
-      {/* Quartier */}
+      {/* Adresse en texte libre */}
       <div>
-        <label htmlFor="quartier" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Quartier
+        <label htmlFor="adresse" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Adresse
         </label>
-        <select
-          id="quartier"
-          value={quartier}
-          onChange={(e) => setQuartier(e.target.value)}
+        <input
+          id="adresse"
+          type="text"
+          value={adresse}
+          onChange={(e) => setAdresse(e.target.value)}
+          placeholder="Adresse du commerce (ex: 12 rue de la Paix)"
           className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-base dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-        >
-          {QUARTIERS.map((q) => (
-            <option key={q} value={q}>
-              {q}
-            </option>
-          ))}
-        </select>
+        />
       </div>
 
       {/* Statut : gros boutons colorés */}

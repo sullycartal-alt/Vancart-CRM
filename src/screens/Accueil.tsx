@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import type { Commerce, Prospecteur } from '../types'
-import { QUARTIERS } from '../constants'
 import {
   formatDateJour,
   formatDateRelative,
@@ -9,6 +8,8 @@ import {
 } from '../utils'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { Badge } from '../components/ui/Badge'
+import { Drawer } from '../components/ui/Drawer'
+import { Stats } from './Stats'
 
 interface AccueilProps {
   commerces: Commerce[]
@@ -32,22 +33,17 @@ export function Accueil({
     'vancart-prospecteur',
     'Sullivan',
   )
-  const [quartierActif, setQuartierActif] = useState<string>('Tous')
-
-  // Filtre éventuel sur le quartier actif
-  const commercesFiltres =
-    quartierActif === 'Tous'
-      ? commerces
-      : commerces.filter((c) => c.quartier === quartierActif)
+  // Drawer des statistiques (l'ancien onglet Stats)
+  const [statsOuvertes, setStatsOuvertes] = useState(false)
 
   // Rappels du jour ou en retard
-  const rappels = commercesFiltres.filter(
+  const rappels = commerces.filter(
     (c) => c.rappel && (isRappelAujourdhui(c.rappel) || isRappelEnRetard(c.rappel)),
   )
 
   // Relances chaudes : intéressés ou en négociation, sans contact depuis plus de 3 jours
   const TROIS_JOURS_MS = 3 * 24 * 60 * 60 * 1000
-  const relancesChaudes = commercesFiltres.filter(
+  const relancesChaudes = commerces.filter(
     (c) =>
       (c.statut === 'intéressé' || c.statut === 'en_négociation') &&
       Date.now() - new Date(c.dateDerniereAction).getTime() > TROIS_JOURS_MS,
@@ -77,24 +73,9 @@ export function Accueil({
             ))}
           </div>
         </div>
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm capitalize text-gray-500 dark:text-gray-400">
-            {formatDateJour()}
-          </p>
-          {/* Sélecteur de quartier actif */}
-          <select
-            value={quartierActif}
-            onChange={(e) => setQuartierActif(e.target.value)}
-            className="rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-          >
-            <option value="Tous">Tous quartiers</option>
-            {QUARTIERS.map((q) => (
-              <option key={q} value={q}>
-                {q}
-              </option>
-            ))}
-          </select>
-        </div>
+        <p className="text-sm capitalize text-gray-500 dark:text-gray-400">
+          {formatDateJour()}
+        </p>
       </header>
 
       {/* Métriques du jour */}
@@ -180,7 +161,8 @@ export function Accueil({
                   <Badge statut={c.statut} />
                 </div>
                 <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">
-                  {c.quartier} · dernier contact {formatDateRelative(c.dateDerniereAction)}
+                  {c.adresse || 'Adresse non renseignée'} · dernier contact{' '}
+                  {formatDateRelative(c.dateDerniereAction)}
                 </p>
                 <button
                   onClick={() => onOuvrirCommerce(c)}
@@ -193,6 +175,17 @@ export function Accueil({
           </div>
         )}
       </section>
+
+      {/* Accès aux statistiques (ancien onglet Stats, désormais en drawer) */}
+      <button
+        onClick={() => setStatsOuvertes(true)}
+        className="flex h-12 w-full items-center justify-center rounded-xl border-2 border-primary/30 bg-white text-sm font-semibold text-primary dark:bg-gray-800"
+      >
+        📊 Voir les stats
+      </button>
+      <Drawer ouvert={statsOuvertes} onClose={() => setStatsOuvertes(false)}>
+        <Stats commerces={commerces} />
+      </Drawer>
     </div>
   )
 }

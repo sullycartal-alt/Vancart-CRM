@@ -55,7 +55,7 @@ export function CommerceDrawer({
   return (
     <Drawer ouvert={true} onClose={onClose}>
       <div className="space-y-5">
-        {/* En-tête : nom, type, quartier, statut */}
+        {/* En-tête : nom, type, adresse, statut */}
         <div>
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
@@ -64,8 +64,7 @@ export function CommerceDrawer({
             <Badge statut={commerce.statut} />
           </div>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {commerce.quartier}
-            {commerce.adresse && ` · ${commerce.adresse}`}
+            {commerce.adresse || 'Adresse non renseignée'}
           </p>
           {commerce.gerant && (
             <p className="text-sm text-gray-500 dark:text-gray-400">
