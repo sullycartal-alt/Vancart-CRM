@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Animations utilisées par le Toast, le Drawer et les transitions d'écrans */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Confort tactile : pas de surlignage bleu au tap sur mobile */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
