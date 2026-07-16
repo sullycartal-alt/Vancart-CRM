@@ -1,12 +1,11 @@
 import { useState } from 'react'
-import type { Commerce, Prospecteur } from '../types'
+import type { Commerce } from '../types'
 import {
   formatDateJour,
   formatDateRelative,
   isRappelAujourdhui,
   isRappelEnRetard,
 } from '../utils'
-import { useLocalStorage } from '../hooks/useLocalStorage'
 import { supabase } from '../lib/supabase'
 import { Badge } from '../components/ui/Badge'
 import { Drawer } from '../components/ui/Drawer'
@@ -19,6 +18,8 @@ interface AccueilProps {
     interessesAujourdhui: number
     tauxConversion: number
   }
+  /** Email de la personne connectée (source unique de l'identité, via Supabase Auth) */
+  emailUtilisateur: string
   onMarquerRappelFait: (id: string) => void
   onOuvrirCommerce: (commerce: Commerce) => void
 }
@@ -27,13 +28,12 @@ interface AccueilProps {
 export function Accueil({
   commerces,
   metriques,
+  emailUtilisateur,
   onMarquerRappelFait,
   onOuvrirCommerce,
 }: AccueilProps) {
-  const [prospecteur, setProspecteur] = useLocalStorage<Prospecteur>(
-    'vancart-prospecteur',
-    'Sullivan',
-  )
+  // Prénom affiché dans la salutation, dérivé de l'email de la session active
+  const prenom = emailUtilisateur.split('@')[0] || 'à toi'
   // Drawer des statistiques (l'ancien onglet Stats)
   const [statsOuvertes, setStatsOuvertes] = useState(false)
 
@@ -52,28 +52,11 @@ export function Accueil({
 
   return (
     <div className="space-y-6 p-4">
-      {/* En-tête : salutation + toggle prospecteur */}
+      {/* En-tête : salutation basée sur la session Supabase active */}
       <header className="space-y-2">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Bonjour {prospecteur} 👋
-          </h1>
-          <div className="flex rounded-full bg-gray-200 p-1 dark:bg-gray-700">
-            {(['Sullivan', 'Audrey'] as Prospecteur[]).map((p) => (
-              <button
-                key={p}
-                onClick={() => setProspecteur(p)}
-                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  prospecteur === p
-                    ? 'bg-primary text-white'
-                    : 'text-gray-600 dark:text-gray-300'
-                }`}
-              >
-                {p[0]}
-              </button>
-            ))}
-          </div>
-        </div>
+        <h1 className="text-2xl font-bold capitalize text-gray-900 dark:text-white">
+          Bonjour {prenom} 👋
+        </h1>
         <p className="text-sm capitalize text-gray-500 dark:text-gray-400">
           {formatDateJour()}
         </p>

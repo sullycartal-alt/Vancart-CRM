@@ -57,11 +57,11 @@ export default function App() {
     return <Login />
   }
 
-  return <VanCartApp />
+  return <VanCartApp session={session} />
 }
 
 /** L'application elle-même, rendue uniquement quand une session est active */
-function VanCartApp() {
+function VanCartApp({ session }: { session: Session }) {
   const { commerces, ajouter, modifier, supprimer, metriques } = useCommerces()
   const [ecran, setEcran] = useState<Ecran>('accueil')
   const [commerceOuvert, setCommerceOuvert] = useState<Commerce | null>(null)
@@ -94,6 +94,7 @@ function VanCartApp() {
           <Accueil
             commerces={commerces}
             metriques={metriques}
+            emailUtilisateur={session.user.email ?? ''}
             onMarquerRappelFait={handleMarquerRappelFait}
             onOuvrirCommerce={setCommerceOuvert}
           />
