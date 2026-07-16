@@ -15,6 +15,9 @@ export type Statut =
 /** Prospecteur : l'un des deux fondateurs */
 export type Prospecteur = 'Sullivan' | 'Audrey'
 
+/** Niveau de priorité de relance d'un commerce */
+export type NiveauPriorite = 'chaud' | 'tiède' | 'froid'
+
 /** Un commerce prospecté sur le terrain */
 export interface Commerce {
   id: string

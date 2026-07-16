@@ -14,7 +14,13 @@ Ouvrez **SQL Editor** dans le dashboard Supabase, collez le contenu de `schema.s
 - les règles de sécurité (RLS) : **tout utilisateur connecté voit et modifie tout**, les requêtes non authentifiées sont totalement bloquées,
 - l'activation du temps réel (les changements d'un téléphone apparaissent en direct sur l'autre).
 
-## 3. Créer les comptes Sullivan et Audrey
+## 3. Activer l'historique des changements de statut (optionnel mais recommandé)
+
+Ouvrez **SQL Editor**, collez le contenu de `historique_statuts.sql` et exécutez-le **après** `schema.sql`. Cela crée la table `commerces_historique`, qui journalise automatiquement chaque création de commerce et chaque changement de statut (déclenché par des triggers, rien à faire côté app). Elle alimente le dashboard de statistiques avancées (temps moyen de conversion, visites des 7 derniers jours, scoring des prospects).
+
+⚠️ Cette table ne se peuple qu'à partir de son exécution : les changements de statut antérieurs ne sont pas récupérables. Les statistiques concernées afficheront « pas encore de données » tant que l'équipe n'a pas quelques jours d'usage réel derrière elle.
+
+## 4. Créer les comptes Sullivan et Audrey
 
 ⚠️ La création de comptes par SQL direct dans `auth.users` n'est **pas recommandée** par Supabase (mots de passe hachés, colonnes internes susceptibles de changer). La procédure officielle et fiable passe par le dashboard :
 
@@ -29,6 +35,6 @@ C'est tout : l'app n'a pas de page d'inscription, seuls ces comptes créés manu
 Pensez aussi à désactiver les inscriptions libres par sécurité :
 **Authentication → Sign In / Up → Providers → Email** : décochez « Allow new users to sign up ».
 
-## 4. Vérifier
+## 5. Vérifier
 
 Lancez l'app (`npm run dev`), connectez-vous avec un des deux comptes, ajoutez un commerce, puis ouvrez l'app dans un autre navigateur avec l'autre compte : la fiche doit apparaître en direct.

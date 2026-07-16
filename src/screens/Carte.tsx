@@ -12,9 +12,18 @@ interface CarteProps {
   onOuvrirCommerce: (commerce: Commerce) => void
 }
 
-/** Coordonnées géocodées d'une adresse (null = géocodage échoué) */
-type Coordonnees = { lat: number; lon: number } | null
-type GeoCache = Record<string, Coordonnees>
+/**
+ * Entrée du cache de géocodage : soit une adresse trouvée (coordonnées),
+ * soit un échec horodaté. Un échec est retenté après 24h plutôt que
+ * d'être ignoré indéfiniment (l'API Nominatim peut être temporairement
+ * indisponible sans que l'adresse soit fausse).
+ */
+type EntreeGeocache =
+  | { statut: 'trouvé'; lat: number; lon: number }
+  | { statut: 'échec'; tente: string }
+type GeoCache = Record<string, EntreeGeocache>
+
+const VINGT_QUATRE_H_MS = 24 * 60 * 60 * 1000
 
 // Centre de Paris et zoom initial
 const CENTRE_PARIS: [number, number] = [48.8566, 2.3522]
@@ -28,12 +37,18 @@ export function Carte({ commerces, onOuvrirCommerce }: CarteProps) {
   // Cache des géocodages pour éviter de rappeler Nominatim à chaque ouverture
   const [cache, setCache] = useLocalStorage<GeoCache>('geocache', {})
 
-  // Géocode les adresses absentes du cache, une par une (limite Nominatim ~1 req/s)
+  // Géocode les adresses absentes du cache ou dont l'échec date de plus de
+  // 24h, une par une (limite Nominatim ~1 req/s)
   useEffect(() => {
     // (c.adresse ?? '') : une fiche d'une ancienne version peut ne pas avoir d'adresse
-    const aGeocoder = commerces.filter(
-      (c) => (c.adresse ?? '').trim() !== '' && !(c.adresse in cache),
-    )
+    const aGeocoder = commerces.filter((c) => {
+      const adresse = (c.adresse ?? '').trim()
+      if (adresse === '') return false
+      const entree = cache[c.adresse]
+      if (!entree) return true
+      if (entree.statut === 'trouvé') return false
+      return Date.now() - new Date(entree.tente).getTime() > VINGT_QUATRE_H_MS
+    })
     if (aGeocoder.length === 0) return
 
     let annule = false
@@ -42,7 +57,7 @@ export function Carte({ commerces, onOuvrirCommerce }: CarteProps) {
         // Politesse vis-à-vis de l'API gratuite : 1 requête par seconde max
         await new Promise((r) => setTimeout(r, 1100))
         if (annule) return
-        let coordonnees: Coordonnees = null
+        let entree: EntreeGeocache
         try {
           const reponse = await fetch(
             `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
@@ -50,17 +65,20 @@ export function Carte({ commerces, onOuvrirCommerce }: CarteProps) {
             )}&format=json&limit=1`,
           )
           const resultats = await reponse.json()
-          if (Array.isArray(resultats) && resultats[0]) {
-            coordonnees = {
-              lat: parseFloat(resultats[0].lat),
-              lon: parseFloat(resultats[0].lon),
-            }
-          }
+          entree =
+            Array.isArray(resultats) && resultats[0]
+              ? {
+                  statut: 'trouvé',
+                  lat: parseFloat(resultats[0].lat),
+                  lon: parseFloat(resultats[0].lon),
+                }
+              : { statut: 'échec', tente: new Date().toISOString() }
         } catch {
-          // Échec réseau ou parsing : le commerce sera ignoré sur la carte
+          // Échec réseau ou parsing : retenté automatiquement après 24h
+          entree = { statut: 'échec', tente: new Date().toISOString() }
         }
         if (annule) return
-        setCache((precedent) => ({ ...precedent, [commerce.adresse]: coordonnees }))
+        setCache((precedent) => ({ ...precedent, [commerce.adresse]: entree }))
       }
     })()
 
@@ -74,12 +92,30 @@ export function Carte({ commerces, onOuvrirCommerce }: CarteProps) {
     () =>
       commerces
         .filter((c) => filtre === 'Tous' || c.prospecteur === filtre)
-        .map((c) => ({ commerce: c, coordonnees: cache[c.adresse] }))
+        .map((c) => ({ commerce: c, entree: cache[c.adresse] }))
         .filter(
-          (m): m is { commerce: Commerce; coordonnees: { lat: number; lon: number } } =>
-            m.coordonnees != null,
+          (
+            m,
+          ): m is {
+            commerce: Commerce
+            entree: Extract<EntreeGeocache, { statut: 'trouvé' }>
+          } => m.entree?.statut === 'trouvé',
         ),
     [commerces, filtre, cache],
+  )
+
+  // Commerces avec une adresse renseignée mais toujours introuvables sur la
+  // carte (adresse mal saisie, ou géocodage pas encore passé) : Sullivan et
+  // Audrey peuvent ainsi repérer une saisie à corriger plutôt que de se
+  // demander pourquoi un commerce n'apparaît pas.
+  const nonLocalises = useMemo(
+    () =>
+      commerces.filter((c) => {
+        const adresse = (c.adresse ?? '').trim()
+        if (adresse === '') return false
+        return cache[c.adresse]?.statut !== 'trouvé'
+      }),
+    [commerces, cache],
   )
 
   return (
@@ -116,6 +152,18 @@ export function Carte({ commerces, onOuvrirCommerce }: CarteProps) {
             </span>
           ))}
         </div>
+        {/* Indicateur des commerces non localisés (adresse à vérifier) */}
+        {nonLocalises.length > 0 && (
+          <div className="rounded-lg bg-amber-100 px-3 py-2 text-xs text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+            ⚠️ {nonLocalises.length} commerce{nonLocalises.length > 1 ? 's' : ''} non
+            localisé{nonLocalises.length > 1 ? 's' : ''} (adresse à vérifier) :{' '}
+            {nonLocalises
+              .slice(0, 4)
+              .map((c) => c.nom)
+              .join(', ')}
+            {nonLocalises.length > 4 && ` +${nonLocalises.length - 4} autre(s)`}
+          </div>
+        )}
       </div>
 
       {/* La carte occupe toute la hauteur restante. z-0 garde les drawers
@@ -130,10 +178,10 @@ export function Carte({ commerces, onOuvrirCommerce }: CarteProps) {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          {marqueurs.map(({ commerce, coordonnees }) => (
+          {marqueurs.map(({ commerce, entree }) => (
             <CircleMarker
               key={commerce.id}
-              center={[coordonnees.lat, coordonnees.lon]}
+              center={[entree.lat, entree.lon]}
               radius={10}
               pathOptions={{
                 color: '#FFFFFF',

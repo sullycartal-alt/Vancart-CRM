@@ -1,7 +1,12 @@
 import { useState } from 'react'
 import type { Commerce, Statut } from '../types'
 import { COULEURS_STATUT, ICONES_TYPE, STATUTS } from '../constants'
-import { formatDateRelative, getStatutLabel } from '../utils'
+import {
+  depuisDatetimeLocalParis,
+  formatDateRelative,
+  getStatutLabel,
+  versDatetimeLocalParis,
+} from '../utils'
 import { Drawer } from './ui/Drawer'
 import { Badge } from './ui/Badge'
 
@@ -40,7 +45,9 @@ export function CommerceDrawer({
 
   const changerRappel = (valeur: string) => {
     onModifier(commerce.id, {
-      rappel: valeur ? new Date(valeur).toISOString() : undefined,
+      // Le champ datetime-local est saisi en heure de Paris, pas celle du
+      // navigateur : on convertit explicitement pour éviter tout décalage.
+      rappel: valeur ? depuisDatetimeLocalParis(valeur) : undefined,
     })
   }
 
@@ -139,7 +146,7 @@ export function CommerceDrawer({
           <input
             id="rappel-drawer"
             type="datetime-local"
-            defaultValue={commerce.rappel ? commerce.rappel.slice(0, 16) : ''}
+            defaultValue={commerce.rappel ? versDatetimeLocalParis(commerce.rappel) : ''}
             onChange={(e) => changerRappel(e.target.value)}
             className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-base dark:border-gray-600 dark:bg-gray-700 dark:text-white"
           />

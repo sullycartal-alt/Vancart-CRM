@@ -1,4 +1,4 @@
-import type { Statut, TypeCommerce } from '../types'
+import type { NiveauPriorite, Statut, TypeCommerce } from '../types'
 
 // Couleur associée à chaque statut du pipeline
 export const COULEURS_STATUT: Record<Statut, string> = {
@@ -30,3 +30,16 @@ export const STATUTS: Statut[] = [
 
 // Couleur principale de l'application
 export const COULEUR_PRIMAIRE = '#7C3AED'
+
+// Couleur et icône par niveau de priorité de relance (scoring du Pipeline)
+export const COULEURS_PRIORITE: Record<NiveauPriorite, string> = {
+  chaud: '#EF4444',
+  tiède: '#F59E0B',
+  froid: '#3B82F6',
+}
+
+export const ICONES_PRIORITE: Record<NiveauPriorite, string> = {
+  chaud: '🔥',
+  tiède: '🌤️',
+  froid: '❄️',
+}

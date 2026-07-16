@@ -1,4 +1,4 @@
-import type { Commerce, Statut } from '../types'
+import type { Commerce, NiveauPriorite, Statut } from '../types'
 
 /**
  * Normalise un commerce potentiellement issu d'anciennes versions de l'app.
@@ -57,6 +57,13 @@ export function isRappelEnRetard(rappelISO?: string): boolean {
   return new Date(rappelISO).getTime() < Date.now()
 }
 
+/** Un commerce "intéressé"/"en négociation" est une relance chaude s'il est resté sans contact plus de 3 jours */
+export function isRelanceChaude(commerce: Commerce): boolean {
+  if (commerce.statut !== 'intéressé' && commerce.statut !== 'en_négociation') return false
+  const TROIS_JOURS_MS = 3 * 24 * 60 * 60 * 1000
+  return Date.now() - new Date(commerce.dateDerniereAction).getTime() > TROIS_JOURS_MS
+}
+
 /** Indique si un rappel est prévu aujourd'hui */
 export function isRappelAujourdhui(rappelISO?: string): boolean {
   if (!rappelISO) return false
@@ -112,6 +119,99 @@ export function getArrondissement(adresse: string): string | null {
     if (numero >= 1 && numero <= 20) return numero === 1 ? '1er' : `${numero}e`
   }
   return null
+}
+
+const FUSEAU_PARIS = 'Europe/Paris'
+
+function partiesDateParis(date: Date) {
+  const parties = new Intl.DateTimeFormat('en-US', {
+    timeZone: FUSEAU_PARIS,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date)
+  const val = (type: string) => Number(parties.find((p) => p.type === type)?.value ?? 0)
+  return {
+    annee: val('year'),
+    mois: val('month'),
+    jour: val('day'),
+    heure: val('hour'),
+    minute: val('minute'),
+  }
+}
+
+/**
+ * Convertit une date ISO (UTC) en chaîne "YYYY-MM-DDTHH:mm" représentant
+ * l'heure de Paris, pour alimenter un <input type="datetime-local">.
+ * Évite le décalage d'1-2h qu'on aurait en tronquant l'ISO brut (UTC).
+ */
+export function versDatetimeLocalParis(dateISO: string): string {
+  const { annee, mois, jour, heure, minute } = partiesDateParis(new Date(dateISO))
+  const deuxChiffres = (n: number) => String(n).padStart(2, '0')
+  return `${annee}-${deuxChiffres(mois)}-${deuxChiffres(jour)}T${deuxChiffres(heure)}:${deuxChiffres(minute)}`
+}
+
+/**
+ * Convertit la valeur d'un <input type="datetime-local"> — interprétée comme
+ * heure de Paris — en date ISO UTC, quel que soit le fuseau du navigateur.
+ */
+export function depuisDatetimeLocalParis(valeurLocale: string): string {
+  const [datePart, heurePart] = valeurLocale.split('T')
+  const [annee, mois, jour] = datePart.split('-').map(Number)
+  const [heure, minute] = (heurePart ?? '00:00').split(':').map(Number)
+
+  // Première estimation en UTC, puis correction par le décalage réel de
+  // Paris à cette date (gère automatiquement l'heure d'été/hiver)
+  const essai = Date.UTC(annee, mois - 1, jour, heure, minute)
+  const obtenuAParis = partiesDateParis(new Date(essai))
+  const obtenu = Date.UTC(
+    obtenuAParis.annee,
+    obtenuAParis.mois - 1,
+    obtenuAParis.jour,
+    obtenuAParis.heure,
+    obtenuAParis.minute,
+  )
+  const decalage = obtenu - essai
+  return new Date(essai - decalage).toISOString()
+}
+
+/**
+ * Calcule le niveau de priorité de relance d'un commerce, à partir de son
+ * statut actuel, de l'ancienneté du dernier changement enregistré dans
+ * l'historique (ou de la dernière action connue si l'historique est encore
+ * vide) et du nombre de passages déjà effectués sans conversion. Les
+ * commerces "client" ou "pas_intéressé" sont hors scoring (renvoie null).
+ */
+export function calculerScore(
+  commerce: Commerce,
+  historique: { commerceId: string; changedAt: string }[],
+): NiveauPriorite | null {
+  if (commerce.statut === 'client' || commerce.statut === 'pas_intéressé') return null
+
+  const evenements = historique.filter((h) => h.commerceId === commerce.id)
+  const dernierChangement =
+    evenements.length > 0
+      ? evenements.reduce(
+          (plusRecent, e) => (e.changedAt > plusRecent ? e.changedAt : plusRecent),
+          evenements[0].changedAt,
+        )
+      : commerce.dateDerniereAction
+  const joursDepuis = (Date.now() - new Date(dernierChangement).getTime()) / 86_400_000
+  const passages = Math.max(evenements.length, 1)
+
+  if (commerce.statut === 'intéressé' || commerce.statut === 'en_négociation') {
+    if (joursDepuis <= 3) return 'chaud'
+    if (joursDepuis <= 7) return 'tiède'
+    return 'froid'
+  }
+  // à_visiter / pas_là : chaud seulement si tout frais, sinon dépend du
+  // nombre de passages déjà effectués sans résultat
+  if (joursDepuis <= 1) return 'chaud'
+  if (passages >= 3 || joursDepuis > 10) return 'froid'
+  return 'tiède'
 }
 
 /** Formate la date du jour en français, ex : "mercredi 11 juin" */

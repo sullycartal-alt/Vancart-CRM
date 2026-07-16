@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <!-- Icône placeholder VanCart : fond violet, lettre V blanche -->
-  <rect width="512" height="512" rx="106" fill="#7C3AED"/>
-  <text x="256" y="342" font-family="Arial, sans-serif" font-size="256" font-weight="bold" fill="#FFFFFF" text-anchor="middle">V</text>
+  <!-- Monogramme VanCart : fond violet de marque, "V" blanc -->
+  <rect width="512" height="512" rx="112" fill="#6C47FF"/>
+  <polygon points="133,133 256,421 379,133 315,133 256,277 197,133" fill="#FFFFFF"/>
 </svg>

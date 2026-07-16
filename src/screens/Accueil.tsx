@@ -5,6 +5,7 @@ import {
   formatDateRelative,
   isRappelAujourdhui,
   isRappelEnRetard,
+  isRelanceChaude,
 } from '../utils'
 import { supabase } from '../lib/supabase'
 import { Badge } from '../components/ui/Badge'
@@ -43,12 +44,7 @@ export function Accueil({
   )
 
   // Relances chaudes : intéressés ou en négociation, sans contact depuis plus de 3 jours
-  const TROIS_JOURS_MS = 3 * 24 * 60 * 60 * 1000
-  const relancesChaudes = commerces.filter(
-    (c) =>
-      (c.statut === 'intéressé' || c.statut === 'en_négociation') &&
-      Date.now() - new Date(c.dateDerniereAction).getTime() > TROIS_JOURS_MS,
-  )
+  const relancesChaudes = commerces.filter(isRelanceChaude)
 
   return (
     <div className="space-y-6 p-4">

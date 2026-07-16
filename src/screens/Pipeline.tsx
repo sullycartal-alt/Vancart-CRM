@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import type { Commerce, Prospecteur, Statut } from '../types'
-import { COULEURS_STATUT, ICONES_TYPE } from '../constants'
-import { formatDateRelative, getStatutLabel, isRappelEnRetard } from '../utils'
+import { COULEURS_PRIORITE, COULEURS_STATUT, ICONES_PRIORITE, ICONES_TYPE } from '../constants'
+import { calculerScore, formatDateRelative, getStatutLabel, isRappelEnRetard } from '../utils'
+import { useHistorique } from '../hooks/useHistorique'
 
 interface PipelineProps {
   commerces: Commerce[]
@@ -20,12 +21,49 @@ const ORDRE_GROUPES: Statut[] = [
 
 type FiltreProspecteur = 'Tous' | Prospecteur
 
+// Génère le CSV de la liste de commerces fournie (nom, adresse, statut,
+// prospecteur, notes, date de dernière action)
+function commercesVersCsv(liste: Commerce[]): string {
+  const entetes = ['Nom', 'Adresse', 'Statut', 'Prospecteur', 'Notes', 'Dernière action']
+  const echapper = (valeur: string) => {
+    const nettoye = valeur.replace(/"/g, '""')
+    return /[",\n]/.test(nettoye) ? `"${nettoye}"` : nettoye
+  }
+  const lignes = liste.map((c) =>
+    [
+      c.nom,
+      c.adresse ?? '',
+      getStatutLabel(c.statut),
+      c.prospecteur,
+      c.notes ?? '',
+      new Date(c.dateDerniereAction).toLocaleString('fr-FR'),
+    ]
+      .map(echapper)
+      .join(','),
+  )
+  return [entetes.join(','), ...lignes].join('\n')
+}
+
+// Déclenche le téléchargement du CSV dans le navigateur
+function exporterCsv(liste: Commerce[]) {
+  const csv = commercesVersCsv(liste)
+  // BOM UTF-8 pour un affichage correct des accents dans Excel
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const lien = document.createElement('a')
+  lien.href = url
+  lien.download = `vancart-commerces-${new Date().toISOString().slice(0, 10)}.csv`
+  lien.click()
+  URL.revokeObjectURL(url)
+}
+
 /** Écran pipeline : liste des commerces groupés par statut, avec recherche et filtres */
 export function Pipeline({ commerces, onOuvrirCommerce }: PipelineProps) {
   const [recherche, setRecherche] = useState('')
   const [filtre, setFiltre] = useState<FiltreProspecteur>('Tous')
   // Le groupe "pas intéressé" est replié par défaut
   const [montrerPasInteresses, setMontrerPasInteresses] = useState(false)
+  const { historique } = useHistorique()
 
   // Filtre par nom ou adresse + filtre prospecteur
   const filtres = commerces.filter((c) => {
@@ -45,7 +83,15 @@ export function Pipeline({ commerces, onOuvrirCommerce }: PipelineProps) {
 
   return (
     <div className="space-y-4 p-4">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Pipeline</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Pipeline</h1>
+        <button
+          onClick={() => exporterCsv(filtres)}
+          className="flex h-12 items-center justify-center rounded-xl border-2 border-primary/30 bg-white px-4 text-sm font-semibold text-primary dark:bg-gray-800"
+        >
+          ⬇️ Export CSV
+        </button>
+      </div>
 
       {/* Barre de recherche */}
       <input
@@ -103,41 +149,55 @@ export function Pipeline({ commerces, onOuvrirCommerce }: PipelineProps) {
             </div>
             {!replie && (
               <div className="space-y-2">
-                {liste.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => onOuvrirCommerce(c)}
-                    className="w-full rounded-xl bg-white p-4 text-left shadow-sm dark:bg-gray-800"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-gray-900 dark:text-white">
-                        {ICONES_TYPE[c.type]} {c.nom}
-                      </span>
-                      {/* Badge prospecteur S / A */}
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                        {c.prospecteur[0]}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {c.adresse || 'Adresse non renseignée'}
-                      {c.gerant && ` · ${c.gerant}`}
-                    </p>
-                    <div className="mt-1 flex items-center gap-2 text-xs text-gray-400">
-                      <span>{formatDateRelative(c.dateDerniereAction)}</span>
-                      {c.rappel && (
-                        <span
-                          className={`rounded-full px-2 py-0.5 font-semibold ${
-                            isRappelEnRetard(c.rappel)
-                              ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400'
-                              : 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400'
-                          }`}
-                        >
-                          ⏰ Rappel
+                {liste.map((c) => {
+                  const score = calculerScore(c, historique)
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => onOuvrirCommerce(c)}
+                      className="w-full rounded-xl bg-white p-4 text-left shadow-sm dark:bg-gray-800"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                          {ICONES_TYPE[c.type]} {c.nom}
                         </span>
-                      )}
-                    </div>
-                  </button>
-                ))}
+                        <div className="flex items-center gap-1">
+                          {/* Badge de priorité de relance (absent pour client / pas_intéressé) */}
+                          {score && (
+                            <span
+                              className="flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-bold text-white"
+                              style={{ backgroundColor: COULEURS_PRIORITE[score] }}
+                            >
+                              {ICONES_PRIORITE[score]} {score}
+                            </span>
+                          )}
+                          {/* Badge prospecteur S / A */}
+                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                            {c.prospecteur[0]}
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {c.adresse || 'Adresse non renseignée'}
+                        {c.gerant && ` · ${c.gerant}`}
+                      </p>
+                      <div className="mt-1 flex items-center gap-2 text-xs text-gray-400">
+                        <span>{formatDateRelative(c.dateDerniereAction)}</span>
+                        {c.rappel && (
+                          <span
+                            className={`rounded-full px-2 py-0.5 font-semibold ${
+                              isRappelEnRetard(c.rappel)
+                                ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400'
+                                : 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400'
+                            }`}
+                          >
+                            ⏰ Rappel
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
             )}
           </section>
