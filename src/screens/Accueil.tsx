@@ -7,6 +7,7 @@ import {
   isRappelEnRetard,
 } from '../utils'
 import { useLocalStorage } from '../hooks/useLocalStorage'
+import { supabase } from '../lib/supabase'
 import { Badge } from '../components/ui/Badge'
 import { Drawer } from '../components/ui/Drawer'
 import { Stats } from './Stats'
@@ -186,6 +187,14 @@ export function Accueil({
       <Drawer ouvert={statsOuvertes} onClose={() => setStatsOuvertes(false)}>
         <Stats commerces={commerces} />
       </Drawer>
+
+      {/* Déconnexion : App.tsx détecte la fin de session et réaffiche le Login */}
+      <button
+        onClick={() => supabase.auth.signOut()}
+        className="flex h-12 w-full items-center justify-center rounded-xl text-sm font-medium text-gray-400 dark:text-gray-500"
+      >
+        Se déconnecter
+      </button>
     </div>
   )
 }

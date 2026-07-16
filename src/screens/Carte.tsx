@@ -30,8 +30,9 @@ export function Carte({ commerces, onOuvrirCommerce }: CarteProps) {
 
   // Géocode les adresses absentes du cache, une par une (limite Nominatim ~1 req/s)
   useEffect(() => {
+    // (c.adresse ?? '') : une fiche d'une ancienne version peut ne pas avoir d'adresse
     const aGeocoder = commerces.filter(
-      (c) => c.adresse.trim() !== '' && !(c.adresse in cache),
+      (c) => (c.adresse ?? '').trim() !== '' && !(c.adresse in cache),
     )
     if (aGeocoder.length === 0) return
 

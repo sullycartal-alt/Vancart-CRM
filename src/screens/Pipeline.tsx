@@ -30,8 +30,10 @@ export function Pipeline({ commerces, onOuvrirCommerce }: PipelineProps) {
   // Filtre par nom ou adresse + filtre prospecteur
   const filtres = commerces.filter((c) => {
     const texte = recherche.toLowerCase()
+    // (c.adresse ?? '') : une fiche d'une ancienne version peut ne pas avoir d'adresse
     const matchTexte =
-      c.nom.toLowerCase().includes(texte) || c.adresse.toLowerCase().includes(texte)
+      c.nom.toLowerCase().includes(texte) ||
+      (c.adresse ?? '').toLowerCase().includes(texte)
     const matchProspecteur = filtre === 'Tous' || c.prospecteur === filtre
     return matchTexte && matchProspecteur
   })

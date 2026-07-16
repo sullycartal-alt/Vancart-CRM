@@ -1,4 +1,30 @@
-import type { Statut } from '../types'
+import type { Commerce, Statut } from '../types'
+
+/**
+ * Normalise un commerce potentiellement issu d'anciennes versions de l'app.
+ * Les toutes premières fiches utilisaient un champ "quartier" au lieu
+ * d'"adresse" : on migre automatiquement, avec chaîne vide en dernier recours
+ * pour qu'aucun champ ne soit jamais undefined.
+ */
+export function normaliserCommerce(
+  brut: Partial<Commerce> & { quartier?: string },
+): Commerce {
+  const maintenant = new Date().toISOString()
+  return {
+    id: brut.id ?? '',
+    nom: brut.nom ?? '',
+    type: brut.type ?? 'autre',
+    adresse: brut.adresse ?? brut.quartier ?? '',
+    gerant: brut.gerant,
+    telephone: brut.telephone,
+    statut: brut.statut ?? 'à_visiter',
+    notes: brut.notes,
+    rappel: brut.rappel,
+    dateAjout: brut.dateAjout ?? maintenant,
+    dateDerniereAction: brut.dateDerniereAction ?? brut.dateAjout ?? maintenant,
+    prospecteur: brut.prospecteur ?? 'Sullivan',
+  }
+}
 
 /**
  * Formate une date ISO de façon relative en français.
