@@ -5,7 +5,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#7C3AED', // Violet principal VanCart
+        primary: '#6C47FF', // Violet principal VanCart
         fond: '#F9FAFB',
       },
     },
