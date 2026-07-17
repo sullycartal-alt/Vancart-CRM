@@ -36,3 +36,31 @@ export interface Commerce {
   dateDerniereAction: string
   prospecteur: Prospecteur
 }
+
+/** Un dossier du wiki d'équipe (espace Docs) */
+export interface WikiDossier {
+  id: string
+  nom: string
+  ordre: number
+  createdAt: string
+}
+
+/** Une page du wiki, appartenant à un dossier */
+export interface WikiPage {
+  id: string
+  dossierId: string
+  titre: string
+  contenu: string
+  createdAt: string
+  updatedAt: string
+}
+
+/** Un fichier joint à une page du wiki (stocké dans Supabase Storage) */
+export interface WikiFichier {
+  id: string
+  pageId: string
+  nomOriginal: string
+  cheminStorage: string
+  tailleOctets: number
+  createdAt: string
+}

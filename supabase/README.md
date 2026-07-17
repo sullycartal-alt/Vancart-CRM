@@ -20,7 +20,16 @@ Ouvrez **SQL Editor**, collez le contenu de `historique_statuts.sql` et exécute
 
 ⚠️ Cette table ne se peuple qu'à partir de son exécution : les changements de statut antérieurs ne sont pas récupérables. Les statistiques concernées afficheront « pas encore de données » tant que l'équipe n'a pas quelques jours d'usage réel derrière elle.
 
-## 4. Créer les comptes Sullivan et Audrey
+## 4. Activer le wiki d'équipe (espace "Docs")
+
+Ouvrez **SQL Editor**, collez le contenu de `wiki.sql` et exécutez-le. Cela crée les tables `wiki_dossiers`, `wiki_pages` et `wiki_fichiers` (avec les mêmes règles RLS que `commerces`) et active le Realtime sur les dossiers et les pages.
+
+Créez ensuite manuellement le bucket de stockage des fichiers joints :
+
+1. Dashboard Supabase → **Storage → New bucket** → nom `wiki-fichiers`, **Public bucket décoché** (bucket privé).
+2. Posez les policies d'accès du bucket : le bloc SQL commenté à la fin de `wiki.sql` fait le travail si le SQL Editor l'autorise ; sinon suivez la procédure manuelle décrite juste avant, depuis **Storage → wiki-fichiers → Policies**.
+
+## 5. Créer les comptes Sullivan et Audrey
 
 ⚠️ La création de comptes par SQL direct dans `auth.users` n'est **pas recommandée** par Supabase (mots de passe hachés, colonnes internes susceptibles de changer). La procédure officielle et fiable passe par le dashboard :
 
@@ -35,6 +44,6 @@ C'est tout : l'app n'a pas de page d'inscription, seuls ces comptes créés manu
 Pensez aussi à désactiver les inscriptions libres par sécurité :
 **Authentication → Sign In / Up → Providers → Email** : décochez « Allow new users to sign up ».
 
-## 5. Vérifier
+## 6. Vérifier
 
 Lancez l'app (`npm run dev`), connectez-vous avec un des deux comptes, ajoutez un commerce, puis ouvrez l'app dans un autre navigateur avec l'autre compte : la fiche doit apparaître en direct.

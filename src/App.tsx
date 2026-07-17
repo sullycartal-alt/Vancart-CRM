@@ -11,6 +11,7 @@ import { Ajouter } from './screens/Ajouter'
 import { Pipeline } from './screens/Pipeline'
 import { Carte } from './screens/Carte'
 import { Login } from './screens/Login'
+import { Docs } from './screens/Docs'
 
 /**
  * Composant racine : vérifie la session Supabase au chargement.
@@ -60,12 +61,18 @@ export default function App() {
   return <VanCartApp session={session} />
 }
 
+/** Les deux espaces de l'app : la prospection terrain (4 onglets) et le wiki Docs */
+type Espace = 'prospection' | 'docs'
+
 /** L'application elle-même, rendue uniquement quand une session est active */
 function VanCartApp({ session }: { session: Session }) {
   const { commerces, ajouter, modifier, supprimer, metriques } = useCommerces()
   const [ecran, setEcran] = useState<Ecran>('accueil')
   const [commerceOuvert, setCommerceOuvert] = useState<Commerce | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  // Espace actif : Docs est un espace à part entière, avec sa propre
+  // navigation interne, distinct des 4 onglets de prospection
+  const [espace, setEspace] = useState<Espace>('prospection')
 
   // Le drawer affiche toujours la version à jour du commerce sélectionné
   const commerceActuel = commerceOuvert
@@ -86,8 +93,30 @@ function VanCartApp({ session }: { session: Session }) {
     setToast('Rappel marqué fait ✓')
   }
 
+  // Espace Docs : sa propre racine, sa propre navigation interne, pas de
+  // BottomNav de prospection. Un fondu doux marque le changement d'espace.
+  if (espace === 'docs') {
+    return (
+      <div key="docs" className="animate-[fadeIn_0.2s_ease-out]">
+        <Docs onRetourProspection={() => setEspace('prospection')} />
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-fond pb-16 text-gray-900 dark:bg-gray-900 dark:text-white">
+    <div
+      key="prospection"
+      className="min-h-screen bg-fond pb-16 text-gray-900 animate-[fadeIn_0.2s_ease-out] dark:bg-gray-900 dark:text-white"
+    >
+      {/* Bouton discret de bascule vers l'espace Docs, toujours visible,
+          masqué par les modales (Drawer, Toast) grâce à son z-index */}
+      <button
+        onClick={() => setEspace('docs')}
+        className="fixed right-3 top-3 z-30 flex items-center gap-1 rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-primary shadow-sm backdrop-blur dark:bg-gray-800/90"
+      >
+        📄 Docs
+      </button>
+
       {/* Transition simple entre écrans : le contenu change avec un léger fondu */}
       <main key={ecran} className="animate-[fadeIn_0.2s_ease-out]">
         {ecran === 'accueil' && (

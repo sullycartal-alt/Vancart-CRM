@@ -8,6 +8,9 @@ export default {
         primary: '#6C47FF', // Violet principal VanCart
         fond: '#F9FAFB',
       },
+      fontFamily: {
+        sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      },
     },
   },
   plugins: [],
